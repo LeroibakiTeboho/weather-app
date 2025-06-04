@@ -1,103 +1,145 @@
-import Image from "next/image";
+"use client";
+import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
+import SearchBar from "@/components/SearchBar";
+import WeatherDisplay from "@/components/WeatherDisplay";
+import Forecast from "@/components/Forecast";
+import AlertBadge from "@/components/AlertBadge";
+import { useWeather } from "@/hooks/useWeather";
+import { useGeolocation } from "@/hooks/useLocation";
+import { Location } from "@/types/weather";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
+import dynamic from "next/dynamic";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [unit, setUnit] = useState<"metric" | "imperial">("metric");
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [activeLocation, setActiveLocation] = useState<Location | null>(null);
+  const { location: currentLocation, loading: geoLoading } = useGeolocation();
+  const { weather, forecast, loading, error } = useWeather(
+    activeLocation?.lat || null,
+    activeLocation?.lon || null,
+    unit
+  );
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const WeatherMap = dynamic(() => import("@/components/WeatherMap"), {
+    ssr: false,
+  });
+
+  // Set current location as default
+  useEffect(() => {
+    if (currentLocation && !activeLocation) {
+      setActiveLocation(currentLocation);
+      setLocations((prev) => [currentLocation, ...prev]);
+    }
+  }, [currentLocation, activeLocation]);
+
+  const handleLocationSelect = (location: Location) => {
+    if (
+      !locations.some(
+        (loc) => loc.lat === location.lat && loc.lon === location.lon
+      )
+    ) {
+      setLocations((prev) => [...prev, location]);
+    }
+    setActiveLocation(location);
+    toast.success(`Showing weather for ${location.name}`);
+  };
+
+  const removeLocation = (index: number) => {
+    const newLocations = [...locations];
+    const removed = newLocations.splice(index, 1);
+
+    if (removed[0].lat === activeLocation?.lat) {
+      setActiveLocation(newLocations[0] || null);
+    }
+
+    setLocations(newLocations);
+  };
+
+  return (
+    <div className="min-h-screen pb-20 bg-gradient-to-br from-blue-50 to-cyan-100 p-4 text-gray-500">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-5xl text-gray-600 font-extrabold text-center my-8">
+            Weather Forecast
+          </h1>
+          <div className="flex items-center space-x-2">
+            <span className="text-gray-700">Units:</span>
+            <button
+              onClick={() => setUnit("metric")}
+              className={`px-3 py-1 rounded-full ${
+                unit === "metric" ? "bg-blue-500 text-white" : "bg-gray-200"
+              }`}
+            >
+              °C
+            </button>
+            <button
+              onClick={() => setUnit("imperial")}
+              className={`px-3 py-1 rounded-full ${
+                unit === "imperial" ? "bg-blue-500 text-white" : "bg-gray-200"
+              }`}
+            >
+              °F
+            </button>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <SearchBar onSelect={handleLocationSelect} />
+
+        {geoLoading && (
+          <p className="text-center m-8 text-3xl">Detecting your location...</p>
+        )}
+        {loading && <LoadingSkeleton />}
+        {error && <p className="text-center text-red-500 mt-8">{error}</p>}
+
+        <div className="flex space-x-2 mt-4 overflow-x-auto pb-4">
+          {locations.map((location, index) => (
+            <div key={index} className="relative group">
+              <button
+                onClick={() => setActiveLocation(location)}
+                className={`px-4 py-2 mt-8 rounded-full whitespace-nowrap flex items-center ${
+                  activeLocation?.lat === location.lat
+                    ? "bg-blue-500 text-white"
+                    : "bg-white text-gray-800"
+                }`}
+              >
+                {location.name}, {location.country}
+              </button>
+              <button
+                onClick={() => removeLocation(index)}
+                className="absolute top-4 -right-2 bg-red-500 rounded-full w-5 h-5 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {geoLoading && (
+          <p className="text-center mt-8">Detecting your location...</p>
+        )}
+        {loading && <p className="text-center mt-8">Loading weather data...</p>}
+        {error && <p className="text-center text-red-500 mt-8">{error}</p>}
+
+        {weather && activeLocation && (
+          <>
+            <WeatherDisplay data={weather} />
+            <AlertBadge weather={weather} />
+            {forecast && <Forecast data={forecast} />}
+            <WeatherMap lat={activeLocation.lat} lon={activeLocation.lon} />
+          </>
+        )}
+
+        {!loading && !weather && (
+          <div className="text-center mt-12">
+            <p className="text-xl text-gray-600">No weather data available</p>
+            <p className="mt-2 text-gray-500">
+              Search for a location to see weather information
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

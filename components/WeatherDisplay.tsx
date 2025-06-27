@@ -1,4 +1,6 @@
 import { WeatherData } from "@/types/weather";
+import Image from "next/image";
+
 
 export default function WeatherDisplay({ data }: { data: WeatherData }) {
   return (
@@ -13,7 +15,7 @@ export default function WeatherDisplay({ data }: { data: WeatherData }) {
           </p>
         </div>
         <div className="text-right">
-          <img
+          <Image
             src={`https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`}
             alt={data.weather[0].description}
             className="w-24 h-24"

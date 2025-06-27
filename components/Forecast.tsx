@@ -1,4 +1,6 @@
 import { ForecastData } from "@/types/weather";
+import Image from "next/image";
+
 
 export default function Forecast({ data }: { data: ForecastData }) {
   return (
@@ -12,7 +14,7 @@ export default function Forecast({ data }: { data: ForecastData }) {
                 weekday: "short",
               })}
             </p>
-            <img
+            <Image
               src={`https://openweathermap.org/img/wn/${day.weather[0].icon}.png`}
               alt={day.weather[0].description}
               className="mx-auto my-2"
